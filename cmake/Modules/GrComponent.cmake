@@ -23,6 +23,7 @@ endif()
 set(__INCLUDED_GR_COMPONENT_CMAKE TRUE)
 
 set(_gr_enabled_components "" CACHE INTERNAL "" FORCE)
+set(_gr_enabled_component_vars "" CACHE INTERNAL "" FORCE)
 set(_gr_disabled_components "" CACHE INTERNAL "" FORCE)
 
 if(NOT DEFINED ENABLE_DEFAULT)
@@ -36,15 +37,28 @@ endif()
 # Register a component into the system
 # - name: canonical component name
 # - var: variable for enabled status
-# - argn: list of dependencies
+# - argn: list of dependencies, both in-build and out-of-build
 ########################################################################
 function(GR_REGISTER_COMPONENT name var)
-    include(CMakeDependentOption)
-    message(STATUS "")
-    message(STATUS "Configuring ${name} support...")
-    foreach(dep ${ARGN})
-        message(STATUS "  Dependency ${dep} = ${${dep}}")
-    endforeach(dep)
+
+    string(TOLOWER ${name} name)
+
+    # is this a test?
+    string(REGEX MATCH "^test" name_has_test ${name})
+    if(NOT "${name_has_test}" STREQUAL "")
+        set(is_test TRUE)
+    else()
+        set(is_test FALSE)
+    endif()
+
+    if(NOT is_test)
+        include(CMakeDependentOption)
+        message(STATUS "")
+        message(STATUS "Configuring ${name} support...")
+        foreach(dep ${ARGN})
+            message(STATUS "  Dependency ${dep} = ${${dep}}")
+        endforeach(dep)
+    endif()
 
     #if the user set the var to force, we note this
     if("${${var}}" STREQUAL "FORCE")
@@ -54,41 +68,102 @@ function(GR_REGISTER_COMPONENT name var)
         set(var_force FALSE)
     endif()
 
-    #rewrite the dependency list so that deps that are also components use the cached version
+    # is this an actual GR component, or just a dependency?  Assume
+    # that actual components begin with "gr" or "gnuradio" or "volk"
+
+    string(REGEX MATCH "^(gr|gnuradio|volk)" name_has_gr ${name})
+    if(NOT "${name_has_gr}" STREQUAL "")
+        set(is_component TRUE)
+    else()
+        set(is_component FALSE)
+    endif()
+
+    # rewrite the dependency list so that deps that are
+    # also components use the cached version
+
     unset(comp_deps)
+    unset(internal_deps)
+    unset(external_deps)
     foreach(dep ${ARGN})
-        list(FIND _gr_enabled_components ${dep} dep_enb_index)
-        list(FIND _gr_disabled_components ${dep} dep_dis_index)
-        if (${dep_enb_index} EQUAL -1 AND ${dep_dis_index} EQUAL -1)
+        set(dep_enb_index -1)
+        set(dep_dis_index -1)
+        if(NOT ${${dep}_NAME} STREQUAL "")
+            list(FIND _gr_enabled_components ${${dep}_NAME} dep_enb_index)
+            list(FIND _gr_disabled_components ${${dep}_NAME} dep_dis_index)
+        endif()
+        if(${dep_enb_index} EQUAL -1 AND ${dep_dis_index} EQUAL -1)
             list(APPEND comp_deps ${dep})
         else()
             list(APPEND comp_deps ${dep}_cached) #is a component, use cached version
         endif()
+        list(FIND _gr_enabled_component_vars ${dep} dep_enb_index)
+        if(${dep_enb_index} EQUAL -1)
+            list(APPEND external_deps ${dep})
+        else()
+            list(APPEND internal_deps ${dep})
+        endif()
     endforeach(dep)
 
-    #setup the dependent option for this component
-    CMAKE_DEPENDENT_OPTION(${var} "enable ${name} support" ${ENABLE_DEFAULT} "${comp_deps}" OFF)
+    # setup the dependent option for this component
+
+    CMAKE_DEPENDENT_OPTION(${var} "enable ${name} support" 
+        ${ENABLE_DEFAULT} "${comp_deps}" OFF)
     set(${var} "${${var}}" PARENT_SCOPE)
     set(${var}_cached "${${var}}" CACHE INTERNAL "" FORCE)
+    set(${var}_NAME ${name} CACHE INTERNAL "" FORCE)
 
-    #force was specified, but the dependencies were not met
+    # recursively add to internal deps to get all internal deps
+
+    list(APPEND all_internal_deps ${internal_deps})
+    list(LENGTH internal_deps len)
+    while(NOT len EQUAL 0)
+    	# get first item
+        list(GET internal_deps 0 item)
+        list(REMOVE_AT internal_deps 0)
+        list(APPEND all_internal_deps ${${item}_INTERNAL_DEPS})
+        list(APPEND internal_deps ${${dep}_INTERNAL_DEPS})
+        list(LENGTH internal_deps len)
+    endwhile()
+
+    # sort and make internal deps unique
+
+    list(LENGTH all_internal_deps len)
+    if(NOT len EQUAL 0)
+        list(REMOVE_DUPLICATES all_internal_deps)
+        list(SORT all_internal_deps)
+    endif()
+
+    set(${var}_INTERNAL_DEPS "${all_internal_deps}" CACHE INTERNAL "" FORCE)
+    set(${var}_EXTERNAL_DEPS "${external_deps}" CACHE INTERNAL "" FORCE)
+
+    # force was specified, but the dependencies were not met
+
     if(NOT ${var} AND var_force)
         message(FATAL_ERROR "user force-enabled ${name} but configuration checked failed")
     endif()
 
-    #append the component into one of the lists
-    if(${var})
-        message(STATUS "  Enabling ${name} support.")
-        list(APPEND _gr_enabled_components ${name})
-    else(${var})
-        message(STATUS "  Disabling ${name} support.")
-        list(APPEND _gr_disabled_components ${name})
-    endif(${var})
-    message(STATUS "  Override with -D${var}=ON/OFF")
+    # append the component into one of the lists, if not a test
 
-    #make components lists into global variables
+    if(NOT is_test)
+        if(${var})
+            message(STATUS "  Enabling ${name} support.")
+            list(APPEND _gr_enabled_components ${name})
+            if(is_component)
+                list(APPEND _gr_enabled_component_vars ${var})
+            endif()
+        else(${var})
+            message(STATUS "  Disabling ${name} support.")
+            list(APPEND _gr_disabled_components ${name})
+        endif(${var})
+        message(STATUS "  Override with -D${var}=ON/OFF")
+    endif()
+
+    # make components lists into global variables
+
     set(_gr_enabled_components ${_gr_enabled_components} CACHE INTERNAL "" FORCE)
+    set(_gr_enabled_component_vars ${_gr_enabled_component_vars} CACHE INTERNAL "" FORCE)
     set(_gr_disabled_components ${_gr_disabled_components} CACHE INTERNAL "" FORCE)
+
 endfunction(GR_REGISTER_COMPONENT)
 
 ########################################################################
