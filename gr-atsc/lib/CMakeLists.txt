@@ -18,24 +18,6 @@
 # Boston, MA 02110-1301, USA.
 
 ########################################################################
-# Setup the include and linker paths
-########################################################################
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}
-    ${GR_ATSC_INCLUDE_DIRS}
-    ${GR_FILTER_INCLUDE_DIRS}
-    ${GR_ANALOG_INCLUDE_DIRS}
-    ${GR_FEC_INCLUDE_DIRS}
-    ${GNURADIO_RUNTIME_INCLUDE_DIRS}
-    ${LOG4CPP_INCLUDE_DIRS}
-    ${Boost_INCLUDE_DIRS}
-)
-
-link_directories(${Boost_LIBRARY_DIRS})
-link_directories(${LOG4CPP_LIBRARY_DIRS})
-
-########################################################################
 # Generate viterbi mux source
 # http://www.vtk.org/Wiki/CMake_Cross_Compiling#Using_executables_in_the_build_created_during_the_build
 ########################################################################
@@ -43,7 +25,6 @@ if(NOT CMAKE_CROSSCOMPILING)
     add_executable(atsci_viterbi_gen atsci_viterbi_gen.cc)
     export(TARGETS atsci_viterbi_gen APPEND FILE ${EXPORT_FILE})
 endif()
-
 
 set(atsci_viterbi_mux_cc ${CMAKE_CURRENT_BINARY_DIR}/atsci_viterbi_mux.cc)
 
@@ -114,18 +95,12 @@ IF(MSVC)
     )
 ENDIF(MSVC)
 
-list(APPEND atsc_libs
-    gnuradio-filter
-    gnuradio-analog
-    gnuradio-runtime
-    gnuradio-fec
-    ${Boost_LIBRARIES}
-    ${LOG4CPP_LIBRARIES}
+GR_LIBRARY_FOO(gnuradio-atsc
+    RUNTIME_COMPONENT "atsc_runtime"
+    DEVEL_COMPONENT "atsc_devel"
+    AUTO_DEPS_VAR ENABLE_GR_ATSC
+    SOURCES ${gr_atsc_sources}
 )
-
-add_library(gnuradio-atsc SHARED ${gr_atsc_sources})
-target_link_libraries(gnuradio-atsc ${atsc_libs})
-GR_LIBRARY_FOO(gnuradio-atsc RUNTIME_COMPONENT "atsc_runtime" DEVEL_COMPONENT "atsc_devel")
 
 ########################################################################
 # Build and register unit test

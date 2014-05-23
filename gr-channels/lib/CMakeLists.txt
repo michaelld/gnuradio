@@ -18,27 +18,6 @@
 # Boston, MA 02110-1301, USA.
 
 ########################################################################
-# Setup the include and linker paths
-########################################################################
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}
-    ${GR_CHANNELS_INCLUDE_DIRS}
-    ${GR_BLOCKS_INCLUDE_DIRS}
-    ${GR_FILTER_INCLUDE_DIRS}
-    ${GR_ANALOG_INCLUDE_DIRS}
-    ${GNURADIO_RUNTIME_INCLUDE_DIRS}
-    ${Boost_INCLUDE_DIRS}
-)
-
-link_directories(${Boost_LIBRARY_DIRS})
-
-if(ENABLE_GR_CTRLPORT)
-  ADD_DEFINITIONS(-DGR_CTRLPORT)
-  include_directories(${ICE_INCLUDE_DIR})
-endif(ENABLE_GR_CTRLPORT)
-
-########################################################################
 # Setup library
 ########################################################################
 list(APPEND channels_sources
@@ -66,18 +45,14 @@ if(MSVC)
     )
 endif(MSVC)
 
-list(APPEND channels_libs
-    volk
-    gnuradio-runtime
-    gnuradio-filter
-    gnuradio-analog
-    gnuradio-blocks
-    ${Boost_LIBRARIES}
+GR_LIBRARY_FOO(gnuradio-channels
+    RUNTIME_COMPONENT "channels_runtime"
+    DEVEL_COMPONENT "channels_devel"
+    AUTO_DEPS_VAR ENABLE_GR_CHANNELS
+    SOURCES ${channels_sources}
 )
 
-add_library(gnuradio-channels SHARED ${channels_sources})
-target_link_libraries(gnuradio-channels ${channels_libs})
-GR_LIBRARY_FOO(gnuradio-channels RUNTIME_COMPONENT "channels_runtime" DEVEL_COMPONENT "channels_devel")
 add_dependencies(gnuradio-channels
-  channels_generated_includes channels_generated_swigs
-  gnuradio-runtime gnuradio-filter gnuradio-analog gnuradio-blocks)
+    channels_generated_includes
+    channels_generated_swigs
+)

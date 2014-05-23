@@ -105,57 +105,47 @@ endif(MSVC)
 ########################################################################
 # Setup the include and linker paths
 ########################################################################
-include_directories(
-    ${GR_QTGUI_INCLUDE_DIRS}
-    ${GR_FFT_INCLUDE_DIRS}
-    ${GR_FILTER_INCLUDE_DIRS}
-    ${GNURADIO_RUNTIME_INCLUDE_DIRS}
-    ${VOLK_INCLUDE_DIRS}
+
+list(APPEND gr_qtgui_extra_external_include_dirs
     ${QWT_INCLUDE_DIRS}
     ${QT_INCLUDE_DIRS}
     ${FFTW3F_INCLUDE_DIRS}
-    ${LOG4CPP_INCLUDE_DIRS}
-    ${Boost_INCLUDE_DIRS}
-    ${PYTHON_INCLUDE_DIRS}
 )
 
-link_directories(
+list(APPEND gr_qtgui_extra_external_library_dirs
     ${QWT_LIBRARY_DIRS}
     ${FFTW3F_LIBRARY_DIRS}
-    ${LOG4CPP_LIBRARY_DIRS}
-    ${Boost_LIBRARY_DIRS}
 )
-
-include_directories(${PYTHON_INCLUDE_PATH}) #deprecated for dirs (cmake 2.6)
-
-if(ENABLE_GR_CTRLPORT)
-  ADD_DEFINITIONS(-DGR_CTRLPORT)
-  include_directories(${ICE_INCLUDE_DIR})
-endif(ENABLE_GR_CTRLPORT)
 
 ########################################################################
 # Setup library
 ########################################################################
-list(APPEND qtgui_libs
-    gnuradio-runtime
-    gnuradio-fft
-    gnuradio-filter
-    volk
+
+list(APPEND gr_qtgui_extra_libs
     ${QWT_LIBRARIES}
     ${QT_LIBRARIES}
     ${FFTW3F_LIBRARIES}
-    ${LOG4CPP_LIBRARIES}
 )
 
 include(GrPython)
 if(ENABLE_PYTHON)
-  add_definitions(-DENABLE_PYTHON)
-  list(APPEND qtgui_libs
-    ${PYTHON_LIBRARIES}
-  )
+    add_definitions(-DENABLE_PYTHON)
+    list(APPEND gr_qtgui_extra_libs
+        ${PYTHON_LIBRARIES}
+    )
+    list(APPEND gr_qtgui_extra_external_include_dirs
+        ${PYTHON_INCLUDE_DIRS}
+    )
 endif(ENABLE_PYTHON)
 
 add_definitions(-DQWT_DLL) #setup QWT library linkage
-add_library(gnuradio-qtgui SHARED ${qtgui_srcs})
-target_link_libraries(gnuradio-qtgui ${qtgui_libs})
-GR_LIBRARY_FOO(gnuradio-qtgui RUNTIME_COMPONENT "qtgui_runtime" DEVEL_COMPONENT "qtgui_devel")
+
+GR_LIBRARY_FOO(gnuradio-qtgui
+    RUNTIME_COMPONENT "qtgui_runtime"
+    DEVEL_COMPONENT "qtgui_devel"
+    AUTO_DEPS_VAR ENABLE_GR_QTGUI
+    SOURCES ${qtgui_srcs}
+    EXTRA_EXTERNAL_INCLUDE_DIRS ${gr_qtgui_extra_external_include_dirs}
+    EXTRA_EXTERNAL_LIBRARY_DIRS ${gr_qtgui_extra_external_library_dirs}
+    EXTRA_LIBS ${gr_qtgui_extra_libs}
+)

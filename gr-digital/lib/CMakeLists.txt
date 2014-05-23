@@ -18,30 +18,6 @@
 # Boston, MA 02110-1301, USA.
 
 ########################################################################
-# Setup the include and linker paths
-########################################################################
-include_directories(
-    ${GR_DIGITAL_INCLUDE_DIRS}
-    ${GR_BLOCKS_INCLUDE_DIRS}
-    ${GR_ANALOG_INCLUDE_DIRS}
-    ${GR_FFT_INCLUDE_DIRS}
-    ${GR_FILTER_INCLUDE_DIRS}
-    ${GR_BLOCKS_INCLUDE_DIRS}
-    ${GNURADIO_RUNTIME_INCLUDE_DIRS}
-    ${VOLK_INCLUDE_DIRS}
-    ${LOG4CPP_INCLUDE_DIRS}
-    ${Boost_INCLUDE_DIRS}
-)
-
-link_directories(${Boost_LIBRARY_DIRS})
-link_directories(${LOG4CPP_LIBRARY_DIRS})
-
-if(ENABLE_GR_CTRLPORT)
-  ADD_DEFINITIONS(-DGR_CTRLPORT)
-  include_directories(${ICE_INCLUDE_DIR})
-endif(ENABLE_GR_CTRLPORT)
-
-########################################################################
 # generate helper scripts to expand templated files
 ########################################################################
 include(GrPython)
@@ -100,7 +76,6 @@ macro(expand_cc root)
   list(APPEND generated_sources ${expanded_files_cc})  
   list(APPEND generated_headers ${expanded_files_h})  
 endmacro(expand_cc)
-
 
 ########################################################################
 # Invoke macro to generate various sources
@@ -188,27 +163,15 @@ IF(MSVC)
     )
 ENDIF(MSVC)
 
-list(APPEND digital_libs
-    volk
-    gnuradio-runtime
-    gnuradio-filter
-    gnuradio-blocks
-    gnuradio-analog
-    ${Boost_LIBRARIES}
-    ${LOG4CPP_LIBRARIES}
+GR_LIBRARY_FOO(gnuradio-digital
+    RUNTIME_COMPONENT "digital_runtime"
+    DEVEL_COMPONENT "digital_devel"
+    AUTO_DEPS_VAR ENABLE_GR_DIGITAL
+    SOURCES ${digital_sources}
 )
-
-
-add_library(gnuradio-digital SHARED ${digital_sources})
-target_link_libraries(gnuradio-digital ${digital_libs})
-GR_LIBRARY_FOO(gnuradio-digital RUNTIME_COMPONENT "digital_runtime" DEVEL_COMPONENT "digital_devel")
 
 add_dependencies(
     gnuradio-digital
     digital_generated_includes
     digital_generated_swigs
-    gnuradio-runtime
-    gnuradio-filter
-    gnuradio-analog
-    gnuradio-blocks
 )

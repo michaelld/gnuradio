@@ -18,32 +18,6 @@
 # Boston, MA 02110-1301, USA.
 
 ########################################################################
-# Setup the include and linker paths
-########################################################################
-include_directories(
-    ${CMAKE_CURRENT_BINARY_DIR}
-    ${GR_UHD_INCLUDE_DIRS}
-    ${GNURADIO_RUNTIME_INCLUDE_DIRS}
-    ${LOG4CXX_INCLUDE_DIRS}
-    ${Boost_INCLUDE_DIRS}
-    ${UHD_INCLUDE_DIRS}
-)
-
-link_directories(
-  ${UHD_LIBRARY_DIRS}
-  ${LOG4CXX_LIBRARY_DIRS}
-  ${Boost_LIBRARY_DIRS}
-)
-
-if(ENABLE_GR_CTRLPORT)
-  ADD_DEFINITIONS(-DGR_CTRLPORT)
-  include_directories(${ICE_INCLUDE_DIR})
-endif(ENABLE_GR_CTRLPORT)
-
-include_directories(${LOG4CPP_INCLUDE_DIRS})
-link_directories(${LOG4CPP_LIBRARY_DIRS})
-
-########################################################################
 # Setup library
 ########################################################################
 list(APPEND gr_uhd_sources
@@ -66,13 +40,12 @@ if(MSVC)
     )
 endif(MSVC)
 
-list(APPEND uhd_libs
-    gnuradio-runtime
-    ${Boost_LIBRARIES}
-    ${UHD_LIBRARIES}
-    ${LOG4CPP_LIBRARIES}
+GR_LIBRARY_FOO(gnuradio-uhd
+    RUNTIME_COMPONENT "uhd_runtime"
+    DEVEL_COMPONENT "uhd_devel"
+    AUTO_DEPS_VAR ENABLE_GR_UHD
+    SOURCES ${gr_uhd_sources}
+    EXTRA_EXTERNAL_INCLUDE_DIRS ${UHD_INCLUDE_DIRS}
+    EXTRA_EXTERNAL_LIBRARY_DIRS ${UHD_LIBRARY_DIRS}
+    EXTRA_LIBS ${UHD_LIBRARIES}
 )
-
-add_library(gnuradio-uhd SHARED ${gr_uhd_sources})
-target_link_libraries(gnuradio-uhd ${uhd_libs})
-GR_LIBRARY_FOO(gnuradio-uhd RUNTIME_COMPONENT "uhd_runtime" DEVEL_COMPONENT "uhd_devel")

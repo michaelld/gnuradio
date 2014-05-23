@@ -18,26 +18,6 @@
 # Boston, MA 02110-1301, USA.
 
 ########################################################################
-# Setup the include and linker paths
-########################################################################
-include_directories(
-    ${GR_PAGER_INCLUDE_DIRS}
-    ${GR_BLOCKS_INCLUDE_DIRS}
-    ${GNURADIO_RUNTIME_INCLUDE_DIRS}
-    ${Boost_INCLUDE_DIRS}
-)
-
-if(ENABLE_GR_CTRLPORT)
-  ADD_DEFINITIONS(-DGR_CTRLPORT)
-  include_directories(${ICE_INCLUDE_DIR})
-endif(ENABLE_GR_CTRLPORT)
-
-link_directories(${Boost_LIBRARY_DIRS})
-
-include_directories(${LOG4CPP_INCLUDE_DIRS})
-link_directories(${LOG4CPP_LIBRARY_DIRS})
-
-########################################################################
 # Setup library
 ########################################################################
 list(APPEND pager_sources
@@ -65,13 +45,9 @@ if(MSVC)
     )
 endif(MSVC)
 
-list(APPEND pager_libs
-    gnuradio-runtime
-    gnuradio-blocks
-    ${Boost_LIBRARIES}
-    ${LOG4CPP_LIBRARIES}
+GR_LIBRARY_FOO(gnuradio-pager
+    RUNTIME_COMPONENT "pager_runtime"
+    DEVEL_COMPONENT "pager_devel"
+    AUTO_DEPS_VAR ENABLE_GR_PAGER
+    SOURCES ${pager_sources}
 )
-
-add_library(gnuradio-pager SHARED ${pager_sources})
-target_link_libraries(gnuradio-pager ${pager_libs})
-GR_LIBRARY_FOO(gnuradio-pager RUNTIME_COMPONENT "pager_runtime" DEVEL_COMPONENT "pager_devel")

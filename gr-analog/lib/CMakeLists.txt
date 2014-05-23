@@ -18,29 +18,6 @@
 # Boston, MA 02110-1301, USA.
 
 ########################################################################
-# Setup the include and linker paths
-########################################################################
-include_directories(
-    ${CMAKE_CURRENT_BINARY_DIR}/../include
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}
-    ${GR_ANALOG_INCLUDE_DIRS}
-    ${GR_FILTER_INCLUDE_DIRS}
-    ${GR_FFT_INCLUDE_DIRS}
-    ${GR_BLOCKS_INCLUDE_DIRS}
-    ${GNURADIO_RUNTIME_INCLUDE_DIRS}
-    ${VOLK_INCLUDE_DIRS}
-    ${Boost_INCLUDE_DIRS}
-)
-
-link_directories(${Boost_LIBRARY_DIRS})
-
-if(ENABLE_GR_CTRLPORT)
-  ADD_DEFINITIONS(-DGR_CTRLPORT)
-  include_directories(${ICE_INCLUDE_DIR})
-endif(ENABLE_GR_CTRLPORT)
-
-########################################################################
 # generate helper scripts to expand templated files
 ########################################################################
 include(GrPython)
@@ -156,19 +133,17 @@ IF(MSVC)
 
 ENDIF(MSVC)
 
-list(APPEND analog_libs
-    volk
-    gnuradio-runtime
-    gnuradio-blocks
-    gnuradio-filter
-    ${Boost_LIBRARIES}
+GR_LIBRARY_FOO(gnuradio-analog
+    RUNTIME_COMPONENT "analog_runtime"
+    DEVEL_COMPONENT "analog_devel"
+    AUTO_DEPS_VAR ENABLE_GR_ANALOG
+    SOURCES ${analog_sources}
 )
 
-add_library(gnuradio-analog SHARED ${analog_sources})
-target_link_libraries(gnuradio-analog ${analog_libs})
-GR_LIBRARY_FOO(gnuradio-analog RUNTIME_COMPONENT "analog_runtime" DEVEL_COMPONENT "analog_devel")
-add_dependencies(gnuradio-analog analog_generated_includes analog_generated_swigs gnuradio-filter)
-
+add_dependencies(gnuradio-analog
+    analog_generated_includes
+    analog_generated_swigs
+)
 
 ########################################################################
 # QA C++ Code for gr-filter

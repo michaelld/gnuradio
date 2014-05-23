@@ -85,32 +85,6 @@ expand_cc(freq_xlating_fir_filter_XXX_impl ccc ccf fcc fcf scf scc)
 expand_cc(interp_fir_filter_XXX_impl       ccc ccf fcc fff fsf scc)
 expand_cc(rational_resampler_base_XXX_impl ccc ccf fcc fff fsf scc)
 
-
-########################################################################
-# Setup the include and linker paths
-########################################################################
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}
-    ${GR_FILTER_INCLUDE_DIRS}
-    ${GR_FFT_INCLUDE_DIRS}
-    ${GR_BLOCKS_INCLUDE_DIRS}
-    ${GNURADIO_RUNTIME_INCLUDE_DIRS}
-    ${VOLK_INCLUDE_DIRS}
-    ${LOG4CPP_INCLUDE_DIRS}
-    ${Boost_INCLUDE_DIRS}
-)
-
-link_directories(
-  ${Boost_LIBRARY_DIRS}
-  ${LOG4CPP_LIBRARY_DIRS}
-)
-
-if(ENABLE_GR_CTRLPORT)
-  ADD_DEFINITIONS(-DGR_CTRLPORT)
-  include_directories(${ICE_INCLUDE_DIR})
-endif(ENABLE_GR_CTRLPORT)
-
 ########################################################################
 # Setup library
 ########################################################################
@@ -162,21 +136,17 @@ if(MSVC)
     )
 endif(MSVC)
 
-list(APPEND filter_libs
-    gnuradio-runtime
-    gnuradio-fft
-    gnuradio-blocks
-    volk
-    ${Boost_LIBRARIES}
+GR_LIBRARY_FOO(gnuradio-filter
+    RUNTIME_COMPONENT "filter_runtime"
+    DEVEL_COMPONENT "filter_devel"
+    AUTO_DEPS_VAR ENABLE_GR_FILTER
+    SOURCES ${filter_sources}
 )
 
-
-add_library(gnuradio-filter SHARED ${filter_sources})
-target_link_libraries(gnuradio-filter ${filter_libs})
-GR_LIBRARY_FOO(gnuradio-filter RUNTIME_COMPONENT "filter_runtime" DEVEL_COMPONENT "filter_devel")
 add_dependencies(gnuradio-filter
-  filter_generated_includes filter_generated_swigs
-  gnuradio-runtime gnuradio-fft)
+    filter_generated_includes
+    filter_generated_swigs
+)
 
 ########################################################################
 # QA C++ Code for gr-filter

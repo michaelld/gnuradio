@@ -21,48 +21,16 @@ GR_INCLUDE_SUBDIRECTORY(hid)
 GR_INCLUDE_SUBDIRECTORY(fcd)
 
 ########################################################################
-# Setup the include and linker paths
-########################################################################
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}/hid
-    ${CMAKE_CURRENT_SOURCE_DIR}/fcd
-    ${GR_FCD_INCLUDE_DIRS}
-    ${GR_AUDIO_INCLUDE_DIRS}
-    ${GR_BLOCKS_INCLUDE_DIRS}
-    ${GNURADIO_RUNTIME_INCLUDE_DIRS}
-    ${Boost_INCLUDE_DIRS}
-    ${LIBUSB_INCLUDE_DIR}
-)
-
-link_directories(
-	${Boost_LIBRARY_DIRS}
-	${LIBUSB_LIBRARY_DIRS}
-)
-
-if(ENABLE_GR_CTRLPORT)
-  ADD_DEFINITIONS(-DGR_CTRLPORT)
-  include_directories(${ICE_INCLUDE_DIR})
-endif(ENABLE_GR_CTRLPORT)
-
-include_directories(${LOG4CPP_INCLUDE_DIRS})
-link_directories(${LOG4CPP_LIBRARY_DIRS})
-
-########################################################################
 # Setup library
 ########################################################################
+
 list(APPEND gr_fcd_sources
     source_c_impl.cc
 )
 
-list(APPEND fcd_libs
-    gnuradio-runtime
-    gnuradio-blocks
-    gnuradio-audio
-    ${Boost_LIBRARIES}
-)
+if(WIN32)
 
-if (WIN32)
-	list(APPEND fcd_libs setupapi)
+    list(APPEND gr_fcd_extra_libs setupapi)
 
     #Add Windows DLL resource file if using MSVC
     if(MSVC)
@@ -75,23 +43,35 @@ if (WIN32)
 
         list(APPEND gr_fcd_sources ${CMAKE_CURRENT_BINARY_DIR}/gnuradio-fcd.rc)
     endif(MSVC)
+
+elseif(APPLE)
+
+    FIND_LIBRARY(IOKIT_LIBRARY IOKit)
+    list(APPEND gr_fcd_extra_libs ${IOKIT_LIBRARY})
+
+else()
+
+    list(APPEND gr_fcd_extra_libs
+        ${LIBUSB_LIBRARIES}
+    )
+    list(APPEND gr_fcd_extra_external_include_dirs
+        ${LIBUSB_INCLUDE_DIR}
+    )
+    list(APPEND gr_fcd_extra_external_library_dirs
+        ${LIBUSB_LIBRARY_DIRS}
+    )
+    if(LINUX)
+        list(APPEND gr_fcd_extra_libs rt)
+    endif()
+
 endif()
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  FIND_LIBRARY(IOKIT_LIBRARY IOKit)
-  list(APPEND fcd_libs ${IOKIT_LIBRARY})
-elseif (NOT WIN32)
-  list(APPEND fcd_libs
-    ${LIBUSB_LIBRARIES}
-  )
-endif()
-
-
-add_library(gnuradio-fcd SHARED ${gr_fcd_sources})
-if (LINUX)
-  list(APPEND fcd_libs rt)
-endif()
-target_link_libraries(gnuradio-fcd ${fcd_libs} ${LOG4CPP_LIBRARIES})
-
-
-GR_LIBRARY_FOO(gnuradio-fcd RUNTIME_COMPONENT "fcd_runtime" DEVEL_COMPONENT "fcd_devel")
+GR_LIBRARY_FOO(gnuradio-fcd
+    RUNTIME_COMPONENT "fcd_runtime"
+    DEVEL_COMPONENT "fcd_devel"
+    AUTO_DEPS_VAR ENABLE_GR_FCD
+    SOURCES ${gr_fcd_sources}
+    EXTRA_EXTERNAL_INCLUDE_DIRS ${gr_fcd_extra_external_include_dirs}
+    EXTRA_EXTERNAL_LIBRARY_DIRS ${gr_fcd_extra_external_library_dirs}
+    EXTRA_LIBS ${gr_fcd_extra_libs}
+)

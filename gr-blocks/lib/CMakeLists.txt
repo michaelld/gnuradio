@@ -120,26 +120,6 @@ expand_cc_h_impl(vector_sink_X      b s i f c)
 expand_cc_h_impl(vector_source_X    b s i f c)
 
 ########################################################################
-# Setup the include and linker paths
-########################################################################
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}/../include
-    ${GR_BLOCKS_INCLUDE_DIRS}
-    ${GNURADIO_RUNTIME_INCLUDE_DIRS}
-    ${VOLK_INCLUDE_DIRS}
-    ${Boost_INCLUDE_DIRS}
-)
-
-link_directories(${Boost_LIBRARY_DIRS})
-
-if(ENABLE_GR_CTRLPORT)
-  ADD_DEFINITIONS(-DGR_CTRLPORT)
-  include_directories(${ICE_INCLUDE_DIR})
-endif(ENABLE_GR_CTRLPORT)
-
-########################################################################
 # Setup library
 ########################################################################
 list(APPEND gr_blocks_sources
@@ -283,19 +263,12 @@ IF(MSVC)
     )
 ENDIF(MSVC)
 
-list(APPEND blocks_libs
-    gnuradio-runtime
-    volk
-    ${Boost_LIBRARIES}
-    ${BLOCKS_LIBRARIES}
-    ${LOG4CPP_LIBRARIES}
+GR_LIBRARY_FOO(gnuradio-blocks
+    RUNTIME_COMPONENT "blocks_runtime"
+    DEVEL_COMPONENT "blocks_devel"
+    AUTO_DEPS_VAR ENABLE_GR_BLOCKS
+    SOURCES ${gr_blocks_sources}
 )
-
-add_library(gnuradio-blocks SHARED ${gr_blocks_sources})
-add_dependencies(gnuradio-blocks blocks_generated_includes)
-
-target_link_libraries(gnuradio-blocks ${blocks_libs})
-GR_LIBRARY_FOO(gnuradio-blocks RUNTIME_COMPONENT "blocks_runtime" DEVEL_COMPONENT "blocks_devel")
 
 ########################################################################
 # QA C++ Code for gr-blocks

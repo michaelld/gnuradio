@@ -18,26 +18,6 @@
 # Boston, MA 02110-1301, USA.
 
 ########################################################################
-# Setup the include and linker paths
-########################################################################
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}/../include
-    ${GR_WXGUI_INCLUDE_DIRS}
-    ${GNURADIO_RUNTIME_INCLUDE_DIRS}
-    ${VOLK_INCLUDE_DIRS}
-    ${Boost_INCLUDE_DIRS}
-)
-
-link_directories(${Boost_LIBRARY_DIRS})
-
-if(ENABLE_GR_CTRLPORT)
-  ADD_DEFINITIONS(-DGR_CTRLPORT)
-  include_directories(${ICE_INCLUDE_DIR})
-endif(ENABLE_GR_CTRLPORT)
-
-########################################################################
 # Setup library
 ########################################################################
 list(APPEND gr_wxgui_sources
@@ -61,17 +41,9 @@ IF(MSVC)
     )
 ENDIF(MSVC)
 
-list(APPEND wxgui_libs
-    gnuradio-runtime
-    volk
-    ${Boost_LIBRARIES}
-    ${BLOCKS_LIBRARIES}
-    ${LOG4CPP_LIBRARIES}
-)
-
-add_library(gnuradio-wxgui SHARED ${gr_wxgui_sources})
-
-target_link_libraries(gnuradio-wxgui ${wxgui_libs})
 GR_LIBRARY_FOO(gnuradio-wxgui
   RUNTIME_COMPONENT "wxgui_runtime"
-  DEVEL_COMPONENT "wxgui_devel")
+  DEVEL_COMPONENT "wxgui_devel"
+  AUTO_DEPS_VAR ENABLE_GR_WXGUI
+  SOURCES ${gr_wxgui_sources}
+)
