@@ -172,6 +172,25 @@ else(ENABLE_PERFORMANCE_COUNTERS)
 endif(ENABLE_PERFORMANCE_COUNTERS)
 
 ########################################################################
+# On Apple, set install name and use rpath correctly
+########################################################################
+ 
+IF(APPLE)
+  IF(NOT DEFINED CMAKE_INSTALL_NAME_DIR)
+    SET(CMAKE_INSTALL_NAME_DIR ${GR_LIBRARY_DIR} CACHE
+      PATH "Library Install Name Destination Directory" FORCE)
+  ENDIF()
+  IF(NOT DEFINED CMAKE_INSTALL_RPATH)
+    SET(CMAKE_INSTALL_RPATH ${GR_LIBRARY_DIR} CACHE
+      PATH "Library Install RPath" FORCE)
+  ENDIF()
+  IF(NOT DEFINED CMAKE_BUILD_WITH_INSTALL_RPATH_INSTALL_RPATH)
+    SET(CMAKE_BUILD_WITH_INSTALL_RPATH ON CACHE
+      PATH "Do Build Using Library Install RPath" FORCE)
+  ENDIF()
+ENDIF(APPLE)
+
+########################################################################
 # Variables replaced when configuring the package config files
 ########################################################################
 file(TO_NATIVE_PATH "${CMAKE_INSTALL_PREFIX}"           prefix)
