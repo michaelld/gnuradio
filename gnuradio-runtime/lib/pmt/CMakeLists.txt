@@ -18,12 +18,6 @@
 # Boston, MA 02110-1301, USA.
 
 ########################################################################
-# This file included, use CMake directory variables
-########################################################################
-include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR})
-
-########################################################################
 # Generate serial tags header file
 ########################################################################
 
@@ -81,14 +75,8 @@ set(pmt_sources
   ${CMAKE_CURRENT_SOURCE_DIR}/pmt_serialize.cc
 )
 
-list(APPEND gnuradio_pmt_libs
-    ${Boost_LIBRARIES}
-    ${LOG4CPP_LIBRARIES}
-)
-
 add_custom_target(pmt_generated 
   DEPENDS ${PMT_SERIAL_TAGS_H} ${CMAKE_CURRENT_BINARY_DIR}/pmt_unv_int.h)
-
 
 #Add Windows DLL resource file if using MSVC
 if(MSVC)
@@ -104,11 +92,12 @@ if(MSVC)
     )
 endif(MSVC)
 
-
-add_library(gnuradio-pmt SHARED ${pmt_sources})
-target_link_libraries(gnuradio-pmt ${gnuradio_pmt_libs})
-
-GR_LIBRARY_FOO(gnuradio-pmt RUNTIME_COMPONENT "runtime_runtime" DEVEL_COMPONENT "runtime_devel")
+GR_LIBRARY_FOO(gnuradio-pmt
+    RUNTIME_COMPONENT "runtime_runtime"
+    DEVEL_COMPONENT "runtime_devel"
+    AUTO_DEPS_VAR ENABLE_GNURADIO_PMT
+    SOURCES ${pmt_sources}
+)
 
 add_dependencies(gnuradio-pmt
   pmt_generated
@@ -123,23 +112,29 @@ include(GrTest)
 ########################################################################
 # Append gnuradio-runtime test sources
 ########################################################################
+
 list(APPEND test_gnuradio_pmt_sources
   qa_pmt.cc
   qa_pmt_prims.cc
   ${CMAKE_CURRENT_BINARY_DIR}/qa_pmt_unv.cc
 )
 
-include_directories(${CPPUNIT_INCLUDE_DIRS})
-link_directories(${CPPUNIT_LIBRARY_DIRS})
+GR_REGISTER_COMPONENT("test-gnuradio-pmt" ENABLE_TEST_GNURADIO_PMT
+    ENABLE_GNURADIO_PMT
+    ENABLE_TESTING
+)
 
-add_library(test-gnuradio-pmt SHARED ${test_gnuradio_pmt_sources})
-target_link_libraries(test-gnuradio-pmt gnuradio-runtime gnuradio-pmt 
-  ${CPPUNIT_LIBRARIES} ${Boost_LIBRARIES} ${LOG4CPP_LIBRARIES})
+GR_LIBRARY_FOO(test-gnuradio-pmt
+    DO_INSTALL NO
+    AUTO_DEPS_VAR ENABLE_TEST_GNURADIO_PMT
+    SOURCES ${pmt_sources}
+)
 
 ########################################################################
 # Build the test executable
 # Set the test environment so the build libs will be found under MSVC.
 ########################################################################
+
 list(APPEND GR_TEST_TARGET_DEPS test-gnuradio-pmt)
 add_executable(gr_pmt_test test_pmt.cc)
 target_link_libraries(gr_pmt_test test-gnuradio-pmt)
