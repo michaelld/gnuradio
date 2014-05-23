@@ -33,7 +33,12 @@ GR_CHECK_LINUX_SCHED_AVAIL()
 # Register component
 ########################################################################
 include(GrComponent)
+GR_REGISTER_COMPONENT("gnuradio-pmt" ENABLE_GNURADIO_PMT
+    Boost_FOUND
+)
+
 GR_REGISTER_COMPONENT("gnuradio-runtime" ENABLE_GNURADIO_RUNTIME
+    ENABLE_GNURADIO_PMT
     Boost_FOUND
     ENABLE_VOLK
     PYTHONINTERP_FOUND
@@ -128,6 +133,7 @@ CPACK_COMPONENT("runtime_swig"
     DESCRIPTION  "SWIG development .i files"
     DEPENDS      "runtime_swig;runtime_python;runtime_devel"
 )
+
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/gnuradio-runtime.conf.in
     ${CMAKE_CURRENT_BINARY_DIR}/gnuradio-runtime.conf
