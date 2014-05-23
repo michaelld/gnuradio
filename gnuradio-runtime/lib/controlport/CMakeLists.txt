@@ -19,11 +19,6 @@
 
 if(ENABLE_GR_CTRLPORT)
 
-include_directories(${ICE_INCLUDE_DIR})
-
-# Add definition so we can compile in ControlPort to the blocks.
-ADD_DEFINITIONS(-DGR_CTRLPORT)
-
 ########################################################################
 # Run ICE To compile Slice files
 ########################################################################
@@ -49,14 +44,9 @@ list(APPEND gnuradio_runtime_sources
     ${CMAKE_CURRENT_BINARY_DIR}/gnuradio.cpp
 )
 
-########################################################################
-# Add controlport stuff to gnuradio-runtime
-########################################################################
-
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
-list(APPEND gnuradio_runtime_libs
-  ${ICE_LIBRARIES}
+# Append this directory for includes
+list(APPEND gnuradio_runtime_include_dirs
+    ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 endif(ENABLE_GR_CTRLPORT)
