@@ -18,24 +18,6 @@
 # Boston, MA 02110-1301, USA.
 
 ########################################################################
-# Setup the include and linker paths
-########################################################################
-include_directories(
-    ${GR_NOAA_INCLUDE_DIRS}
-    ${GNURADIO_RUNTIME_INCLUDE_DIRS}
-    ${LOG4CPP_INCLUDE_DIRS}
-    ${Boost_INCLUDE_DIRS}
-)
-
-link_directories(${Boost_LIBRARY_DIRS})
-link_directories(${LOG4CPP_LIBRARY_DIRS})
-
-if(ENABLE_GR_CTRLPORT)
-  ADD_DEFINITIONS(-DGR_CTRLPORT)
-  include_directories(${ICE_INCLUDE_DIR})
-endif(ENABLE_GR_CTRLPORT)
-
-########################################################################
 # Setup library
 ########################################################################
 list(APPEND noaa_sources
@@ -58,12 +40,9 @@ if(MSVC)
     )
 endif(MSVC)
 
-list(APPEND noaa_libs
-    gnuradio-runtime
-    ${Boost_LIBRARIES}
-    ${LOG4CPP_LIBRARIES}
+GR_LIBRARY_FOO(gnuradio-noaa
+    RUNTIME_COMPONENT "noaa_runtime"
+    DEVEL_COMPONENT "noaa_devel"
+    AUTO_DEPS_VAR ENABLE_GR_NOAA
+    SOURCES ${noaa_sources}
 )
-
-add_library(gnuradio-noaa SHARED ${noaa_sources})
-target_link_libraries(gnuradio-noaa ${noaa_libs})
-GR_LIBRARY_FOO(gnuradio-noaa RUNTIME_COMPONENT "noaa_runtime" DEVEL_COMPONENT "noaa_devel")

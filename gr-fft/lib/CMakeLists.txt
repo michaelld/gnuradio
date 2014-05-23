@@ -18,26 +18,6 @@
 # Boston, MA 02110-1301, USA.
 
 ########################################################################
-# Setup the include and linker paths
-########################################################################
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}
-    ${GR_FFT_INCLUDE_DIRS}
-    ${GNURADIO_RUNTIME_INCLUDE_DIRS}
-    ${Boost_INCLUDE_DIRS}
-    ${FFTW3F_INCLUDE_DIRS}
-)
-
-link_directories(${Boost_LIBRARY_DIRS})
-link_directories(${FFTW3F_LIBRARY_DIRS})
-
-if(ENABLE_GR_CTRLPORT)
-  ADD_DEFINITIONS(-DGR_CTRLPORT)
-  include_directories(${ICE_INCLUDE_DIR})
-endif(ENABLE_GR_CTRLPORT)
-
-########################################################################
 # Setup library
 ########################################################################
 list(APPEND fft_sources
@@ -50,14 +30,12 @@ list(APPEND fft_sources
 )
 
 if(ENABLE_GR_CTRLPORT)
-list(APPEND fft_sources
-  ctrlport_probe_psd_impl.cc
-)
+    list(APPEND fft_sources
+      ctrlport_probe_psd_impl.cc
+    )
 endif(ENABLE_GR_CTRLPORT)
 
 list(APPEND fft_libs
-    gnuradio-runtime
-    ${Boost_LIBRARIES}
     ${FFTW3F_LIBRARIES}
 )
 
@@ -80,6 +58,12 @@ if(FFTW3F_THREADS_LIBRARIES)
     add_definitions("-DFFTW3F_THREADS")
 endif()
 
-add_library(gnuradio-fft SHARED ${fft_sources})
-target_link_libraries(gnuradio-fft ${fft_libs})
-GR_LIBRARY_FOO(gnuradio-fft RUNTIME_COMPONENT "fft_runtime" DEVEL_COMPONENT "fft_devel")
+GR_LIBRARY_FOO(gnuradio-fft
+    RUNTIME_COMPONENT "fft_runtime"
+    DEVEL_COMPONENT "fft_devel"
+    ENABLE_GR_FFT ENABLE_GR_FFT
+    SOURCES ${fft_sources}
+    EXTRA_EXTERNAL_INCLUDE_DIRS ${FFTW3F_INCLUDE_DIRS}
+    EXTRA_LIBS ${fft_libs}
+    EXTRA_EXTERNAL_LIBRARY_DIRS ${FFTW3F_LIBRARY_DIRS}
+)

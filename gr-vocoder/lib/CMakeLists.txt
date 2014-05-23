@@ -74,27 +74,6 @@ mark_as_advanced(LIBCODEC2_INCLUDE_DIR LIBCODEC2_LIBRARIES)
 endif(NOT GR_USE_SYSTEM_LIBCODEC2)
 
 ########################################################################
-# Setup the include and linker paths
-########################################################################
-include_directories(
-    ${GR_VOCODER_INCLUDE_DIRS}
-    ${GNURADIO_RUNTIME_INCLUDE_DIRS}
-    ${LOG4CXX_INCLUDE_DIRS}
-    ${Boost_INCLUDE_DIRS}
-)
-
-link_directories(${LOG4CXX_LIBRARY_DIRS})
-link_directories(${Boost_LIBRARY_DIRS})
-
-if(ENABLE_GR_CTRLPORT)
-  ADD_DEFINITIONS(-DGR_CTRLPORT)
-  include_directories(${ICE_INCLUDE_DIR})
-endif(ENABLE_GR_CTRLPORT)
-
-include_directories(${LOG4CPP_INCLUDE_DIRS})
-link_directories(${LOG4CPP_LIBRARY_DIRS})
-
-########################################################################
 # Setup library
 ########################################################################
 list(APPEND gr_vocoder_sources
@@ -136,28 +115,24 @@ endif(MSVC)
 ########################################################################
 GR_INCLUDE_SUBDIRECTORY(g7xx)
 
+set(gr_vocoder_libs)
+
 if(NOT GR_USE_SYSTEM_LIBCODEC2)
- GR_INCLUDE_SUBDIRECTORY(codec2)
+    GR_INCLUDE_SUBDIRECTORY(codec2)
+else()
+    list(APPEND gr_vocoder_libs ${LIBCODEC2_LIBRARIES})
 endif(NOT GR_USE_SYSTEM_LIBCODEC2)
 
 if(NOT GR_USE_SYSTEM_LIBGSM)
- GR_INCLUDE_SUBDIRECTORY(gsm)
+    GR_INCLUDE_SUBDIRECTORY(gsm)
+else()
+    list(APPEND gr_vocoder_libs ${LIBGSM_LIBRARIES})
 endif(NOT GR_USE_SYSTEM_LIBGSM)
 
-list(APPEND vocoder_libs
-    gnuradio-runtime
-    ${Boost_LIBRARIES}
-    ${LOG4CPP_LIBRARIES}
+GR_LIBRARY_FOO(gnuradio-vocoder
+    RUNTIME_COMPONENT "vocoder_runtime"
+    DEVEL_COMPONENT "vocoder_devel"
+    AUTO_DEPS_VAR ENABLE_GR_VOCODER
+    SOURCES ${gr_vocoder_sources}
+    EXTRA_LIBS ${gr_vocoder_libs}
 )
-
-if(GR_USE_SYSTEM_LIBCODEC2)
-  list(APPEND vocoder_libs ${LIBCODEC2_LIBRARIES})
-endif(GR_USE_SYSTEM_LIBCODEC2)
-
-if(GR_USE_SYSTEM_LIBGSM)
-  list(APPEND vocoder_libs ${LIBGSM_LIBRARIES})
-endif(GR_USE_SYSTEM_LIBGSM)
-
-add_library(gnuradio-vocoder SHARED ${gr_vocoder_sources})
-target_link_libraries(gnuradio-vocoder ${vocoder_libs})
-GR_LIBRARY_FOO(gnuradio-vocoder RUNTIME_COMPONENT "vocoder_runtime" DEVEL_COMPONENT "vocoder_devel")

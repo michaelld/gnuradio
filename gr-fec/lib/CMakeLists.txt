@@ -17,34 +17,12 @@
 # the Free Software Foundation, Inc., 51 Franklin Street,
 # Boston, MA 02110-1301, USA.
 
+########################################################################
 # These are convenience libraries of 3rd party code.
 # Change to test for distro provided packages
+########################################################################
 GR_INCLUDE_SUBDIRECTORY(reed-solomon)
 GR_INCLUDE_SUBDIRECTORY(viterbi)
-
-########################################################################
-# Setup the include and linker paths
-########################################################################
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}
-    ${GR_FEC_INCLUDE_DIRS}
-    ${GR_BLOCKS_INCLUDE_DIRS}
-    ${GNURADIO_RUNTIME_INCLUDE_DIRS}
-    ${VOLK_INCLUDE_DIRS}
-    ${LOG4CPP_INCLUDE_DIRS}
-    ${Boost_INCLUDE_DIRS}
-)
-
-if(ENABLE_GR_CTRLPORT)
-  ADD_DEFINITIONS(-DGR_CTRLPORT)
-  include_directories(${ICE_INCLUDE_DIR})
-endif(ENABLE_GR_CTRLPORT)
-
-link_directories(
-  ${Boost_LIBRARY_DIRS}
-  ${LOG4CPP_LIBRARY_DIRS}
-)
 
 ########################################################################
 # Setup library
@@ -89,14 +67,15 @@ if(MSVC)
     )
 endif(MSVC)
 
-list(APPEND gnuradio_fec_libs
-    gnuradio-blocks
-    gnuradio-runtime
-    volk
-    ${Boost_LIBRARIES}
-    ${LOG4CPP_LIBRARIES}
+list(APPEND fec_extra_internal_include_dirs
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/viterbi
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/reed-solomon
 )
 
-add_library(gnuradio-fec SHARED ${gnuradio_fec_sources})
-target_link_libraries(gnuradio-fec ${gnuradio_fec_libs})
-GR_LIBRARY_FOO(gnuradio-fec RUNTIME_COMPONENT "fec_runtime" DEVEL_COMPONENT "fec_devel")
+GR_LIBRARY_FOO(gnuradio-fec
+    RUNTIME_COMPONENT "fec_runtime"
+    DEVEL_COMPONENT "fec_devel"
+    AUTO_DEPS_VAR ENABLE_GR_FEC
+    SOURCES ${gnuradio_fec_sources}
+    EXTRA_INTERNAL_INCLUDE_DIRS ${fec_extra_internal_include_dirs}
+)

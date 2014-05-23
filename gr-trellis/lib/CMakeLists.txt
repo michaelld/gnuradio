@@ -17,26 +17,6 @@
 # the Free Software Foundation, Inc., 51 Franklin Street,
 # Boston, MA 02110-1301, USA.
 
-########################################################################
-# Setup the include and linker paths
-########################################################################
-include_directories(
-    ${CMAKE_CURRENT_BINARY_DIR}/../include
-    ${GR_TRELLIS_INCLUDE_DIRS}
-    ${GR_DIGITAL_INCLUDE_DIRS}
-    ${GNURADIO_RUNTIME_INCLUDE_DIRS}
-    ${LOG4CXX_INCLUDE_DIRS}
-    ${Boost_INCLUDE_DIRS}
-)
-
-link_directories(${Boost_LIBRARY_DIRS})
-link_directories(${LOG4CXX_LIBRARY_DIRS})
-
-if(ENABLE_GR_CTRLPORT)
-  ADD_DEFINITIONS(-DGR_CTRLPORT)
-  include_directories(${ICE_INCLUDE_DIR})
-endif(ENABLE_GR_CTRLPORT)
-
 #######################################################################
 # generate the python helper script which calls into the build utils
 ########################################################################
@@ -128,12 +108,6 @@ list(APPEND trellis_sources
     siso_combined_f_impl.cc
 )
 
-list(APPEND trellis_libs
-    gnuradio-runtime
-    gnuradio-digital
-    ${Boost_LIBRARIES}
-)
-
 #Add Windows DLL resource file if using MSVC
 IF(MSVC)
     include(${CMAKE_SOURCE_DIR}/cmake/Modules/GrVersion.cmake)
@@ -148,9 +122,14 @@ IF(MSVC)
     )
 ENDIF(MSVC)
 
-add_library(gnuradio-trellis SHARED ${trellis_sources})
-target_link_libraries(gnuradio-trellis ${trellis_libs})
-GR_LIBRARY_FOO(gnuradio-trellis RUNTIME_COMPONENT "trellis_runtime" DEVEL_COMPONENT "trellis_devel")
+GR_LIBRARY_FOO(gnuradio-trellis
+    RUNTIME_COMPONENT "trellis_runtime"
+    DEVEL_COMPONENT "trellis_devel"
+    AUTO_DEPS_VAR ENABLE_GR_TRELLIS
+    SOURCES ${trellis_sources}
+)
+
 add_dependencies(gnuradio-trellis
-  trellis_generated_includes trellis_generated_swigs
-  gnuradio-runtime gnuradio-digital)
+    trellis_generated_includes
+    trellis_generated_swigs
+)
