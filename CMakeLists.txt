@@ -268,8 +268,14 @@ CPACK_COMPONENT("volk_devel"
     DESCRIPTION  "C++ headers, package config, import libraries"
 )
 
+# temporary hack to set GR_LIBRARY_FOO variables;
+# these should really be set in volk itself ...
+
+set(ENABLE_VOLK_INTERNAL_INCLUDE_DIRS ${VOLK_INCLUDE_DIRS} CACHE INTERNAL "" FORCE)
+set(ENABLE_VOLK_CMAKE_LIB volk CACHE INTERNAL "" FORCE)
 
 add_subdirectory(volk)
+
 endif(ENABLE_VOLK)
 
 # Handle gr_log enable/disable
