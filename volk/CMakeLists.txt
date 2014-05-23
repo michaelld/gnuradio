@@ -128,6 +128,25 @@ install(FILES
 )
 
 ########################################################################
+# On Apple, set install name and use rpath correctly
+########################################################################
+
+IF(APPLE)
+  IF(NOT DEFINED CMAKE_INSTALL_NAME_DIR)
+    SET(CMAKE_INSTALL_NAME_DIR ${VOLK_LIBRARY_DIR} CACHE
+      PATH "Library Install Name Destination Directory" FORCE)
+  ENDIF()
+  IF(NOT DEFINED CMAKE_INSTALL_RPATH)
+    SET(CMAKE_INSTALL_RPATH ${VOLK_LIBRARY_DIR} CACHE
+      PATH "Library Install RPath" FORCE)
+  ENDIF()
+  IF(NOT DEFINED CMAKE_BUILD_WITH_INSTALL_RPATH_INSTALL_RPATH)
+    SET(CMAKE_BUILD_WITH_INSTALL_RPATH ON CACHE
+      PATH "Do Build Using Library Install RPath" FORCE)
+  ENDIF()
+ENDIF(APPLE)
+
+########################################################################
 # Install cmake search routine for external use
 ########################################################################
 install(
