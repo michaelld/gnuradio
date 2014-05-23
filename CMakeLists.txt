@@ -278,8 +278,13 @@ add_subdirectory(volk)
 
 endif(ENABLE_VOLK)
 
-# Handle gr_log enable/disable
+# Handle gr_logging enable/disable
+
 GR_LOGGING()
+GR_REGISTER_COMPONENT("gr-logging" ENABLE_GR_LOGGING
+    ENABLE_GR_LOG
+    HAVE_LOG4CPP
+)
 
 ########################################################################
 # Distribute the README file
