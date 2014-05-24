@@ -61,7 +61,7 @@ endif()
 GR_LIBRARY_FOO(gnuradio-fft
     RUNTIME_COMPONENT "fft_runtime"
     DEVEL_COMPONENT "fft_devel"
-    ENABLE_GR_FFT ENABLE_GR_FFT
+    AUTO_DEPS_VAR ENABLE_GR_FFT
     SOURCES ${fft_sources}
     EXTRA_EXTERNAL_INCLUDE_DIRS ${FFTW3F_INCLUDE_DIRS}
     EXTRA_LIBS ${fft_libs}
