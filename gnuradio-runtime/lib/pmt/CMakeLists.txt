@@ -119,15 +119,30 @@ list(APPEND test_gnuradio_pmt_sources
   ${CMAKE_CURRENT_BINARY_DIR}/qa_pmt_unv.cc
 )
 
+# <HACK>; FIXME: since the 'gnuradio-runtime' library reference does
+# not yet exist, we have to directly add its variables here so that it
+# can be used as a dependency. If it did exist, these items would be
+# automatically created and added via auto deps.
+
+set(ENABLE_GNURADIO_RUNTIME_CMAKE_LIB
+    gnuradio-runtime CACHE INTERNAL "" FORCE
+)
+set(ENABLE_GNURADIO_RUNTIME_INTERNAL_INCLUDE_DIRS
+    ${GNURADIO_RUNTIME_INCLUDE_DIRS} CACHE INTERNAL "" FORCE
+)
+
+# </HACK>
+
 GR_REGISTER_COMPONENT("test-gnuradio-pmt" ENABLE_TEST_GNURADIO_PMT
     ENABLE_GNURADIO_PMT
+    ENABLE_GNURADIO_RUNTIME
     ENABLE_TESTING
 )
 
 GR_LIBRARY_FOO(test-gnuradio-pmt
     DO_INSTALL NO
     AUTO_DEPS_VAR ENABLE_TEST_GNURADIO_PMT
-    SOURCES ${pmt_sources}
+    SOURCES ${test_gnuradio_pmt_sources}
 )
 
 ########################################################################
