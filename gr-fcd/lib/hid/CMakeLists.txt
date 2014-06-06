@@ -21,13 +21,13 @@
 # This file included, use CMake directory variables
 ########################################################################
 
-include_directories(APPEND ${USB_INCLUDES})
+list(APPEND gr_fcd_extra_internal_include_dirs ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(hid_sources)
 
 if(WIN32)
   list(APPEND hid_sources ${CMAKE_CURRENT_SOURCE_DIR}/hidwin.c)
-elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+elseif(APPLE)
   list(APPEND hid_sources ${CMAKE_CURRENT_SOURCE_DIR}/hidmac.c)
 else()
   list(APPEND hid_sources ${CMAKE_CURRENT_SOURCE_DIR}/hid-libusb.c)
@@ -36,4 +36,5 @@ endif()
 ########################################################################
 # Append gnuradio-fcd library sources
 ########################################################################
+
 list(APPEND gr_fcd_sources ${hid_sources})

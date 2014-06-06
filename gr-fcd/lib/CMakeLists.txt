@@ -17,6 +17,19 @@
 # the Free Software Foundation, Inc., 51 Franklin Street,
 # Boston, MA 02110-1301, USA.
 
+########################################################################
+# clear variables used here and in subdirectories
+########################################################################
+
+set(gr_fcd_sources)
+set(gr_fcd_extra_internal_include_dirs)
+set(gr_fcd_extra_external_include_dirs)
+set(gr_fcd_extra_external_library_dirs)
+
+########################################################################
+# include subdirectories
+########################################################################
+
 GR_INCLUDE_SUBDIRECTORY(hid)
 GR_INCLUDE_SUBDIRECTORY(fcd)
 
@@ -57,9 +70,6 @@ else()
     list(APPEND gr_fcd_extra_external_include_dirs
         ${LIBUSB_INCLUDE_DIR}
     )
-    list(APPEND gr_fcd_extra_external_library_dirs
-        ${LIBUSB_LIBRARY_DIRS}
-    )
     if(LINUX)
         list(APPEND gr_fcd_extra_libs rt)
     endif()
@@ -71,6 +81,7 @@ GR_LIBRARY_FOO(gnuradio-fcd
     DEVEL_COMPONENT "fcd_devel"
     AUTO_DEPS_VAR ENABLE_GR_FCD
     SOURCES ${gr_fcd_sources}
+    EXTRA_INTERNAL_INCLUDE_DIRS ${gr_fcd_extra_internal_include_dirs}
     EXTRA_EXTERNAL_INCLUDE_DIRS ${gr_fcd_extra_external_include_dirs}
     EXTRA_EXTERNAL_LIBRARY_DIRS ${gr_fcd_extra_external_library_dirs}
     EXTRA_LIBS ${gr_fcd_extra_libs}
