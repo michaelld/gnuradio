@@ -21,8 +21,10 @@
 # Setup dependencies
 ########################################################################
 include(GrBoost)
+set(NON_WIN32_NON_APPLE_COMPONENT_DEPS)
 if(NOT WIN32 AND NOT APPLE)
     include(FindUSB)
+    set(NON_WIN32_NON_APPLE_COMPONENT_DEPS LIBUSB_FOUND)
 endif()
 
 ########################################################################
@@ -30,22 +32,13 @@ endif()
 ########################################################################
 include(GrComponent)
 
-# FIXME make better conditionalization
-if (LINUX)
-    GR_REGISTER_COMPONENT("gr-fcd" ENABLE_GR_FCD
-        Boost_FOUND
-        ENABLE_GNURADIO_RUNTIME
-        ENABLE_GR_BLOCKS
-        ENABLE_GR_AUDIO
-        LIBUSB_FOUND
-    )
-else()
-    GR_REGISTER_COMPONENT("gr-fcd" ENABLE_GR_FCD
-        Boost_FOUND
-        ENABLE_GNURADIO_RUNTIME
-        ENABLE_GR_AUDIO
-    )
-endif()
+GR_REGISTER_COMPONENT("gr-fcd" ENABLE_GR_FCD
+    Boost_FOUND
+    ENABLE_GNURADIO_RUNTIME
+    ENABLE_GR_BLOCKS
+    ENABLE_GR_AUDIO
+    ${NON_WIN32_NON_APPLE_COMPONENT_DEPS}
+)
 
 GR_SET_GLOBAL(GR_FCD_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}/lib
