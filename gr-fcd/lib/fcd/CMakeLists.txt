@@ -21,12 +21,11 @@
 # This file included, use CMake directory variables
 ########################################################################
 
-include_directories(APPEND ${USB_INCLUDES})
-
+list(APPEND gr_fcd_extra_internal_include_dirs ${CMAKE_CURRENT_SOURCE_DIR})
 set(fcd_sources ${CMAKE_CURRENT_SOURCE_DIR}/fcd.c)
-
 
 ########################################################################
 # Append gnuradio-fcd library sources
 ########################################################################
+
 list(APPEND gr_fcd_sources ${fcd_sources})
