@@ -20,7 +20,7 @@
 ########################################################################
 # Append all sources in this dir
 ########################################################################
-include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
+list(APPEND gr_vocoder_extra_internal_includes ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(gsm_sources
     ${CMAKE_CURRENT_SOURCE_DIR}/add.c

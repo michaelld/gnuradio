@@ -116,6 +116,7 @@ endif(MSVC)
 GR_INCLUDE_SUBDIRECTORY(g7xx)
 
 set(gr_vocoder_libs)
+set(gr_vocoder_extra_internal_includes)
 
 if(NOT GR_USE_SYSTEM_LIBCODEC2)
     GR_INCLUDE_SUBDIRECTORY(codec2)
@@ -134,5 +135,6 @@ GR_LIBRARY_FOO(gnuradio-vocoder
     DEVEL_COMPONENT "vocoder_devel"
     AUTO_DEPS_VAR ENABLE_GR_VOCODER
     SOURCES ${gr_vocoder_sources}
+    EXTRA_INTERNAL_INCLUDE_DIRS ${gr_vocoder_extra_internal_includes}
     EXTRA_LIBS ${gr_vocoder_libs}
 )

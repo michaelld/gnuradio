@@ -21,6 +21,8 @@
 # Create executable to generate other sources
 # http://www.vtk.org/Wiki/CMake_Cross_Compiling#Using_executables_in_the_build_created_during_the_build
 ########################################################################
+list(APPEND gr_vocoder_extra_internal_includes ${CMAKE_CURRENT_SOURCE_DIR})
+
 if(NOT CMAKE_CROSSCOMPILING)
     include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
     add_executable(generate_codebook ${CMAKE_CURRENT_SOURCE_DIR}/generate_codebook.c)
