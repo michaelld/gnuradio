@@ -92,6 +92,20 @@ if(MSVC)
     )
 endif(MSVC)
 
+# <HACK>; FIXME: since the 'gnuradio-runtime' library reference does
+# not yet exist, we have to directly add its variables here so that it
+# can be used as a dependency. If it did exist, these items would be
+# automatically created and added via auto deps.
+
+set(ENABLE_GNURADIO_RUNTIME_CMAKE_LIB
+    gnuradio-runtime CACHE INTERNAL "" FORCE
+)
+set(ENABLE_GNURADIO_RUNTIME_INTERNAL_INCLUDE_DIRS
+    ${GNURADIO_RUNTIME_INCLUDE_DIRS} CACHE INTERNAL "" FORCE
+)
+
+# </HACK>
+
 GR_LIBRARY_FOO(gnuradio-pmt
     RUNTIME_COMPONENT "runtime_runtime"
     DEVEL_COMPONENT "runtime_devel"
@@ -118,20 +132,6 @@ list(APPEND test_gnuradio_pmt_sources
   qa_pmt_prims.cc
   ${CMAKE_CURRENT_BINARY_DIR}/qa_pmt_unv.cc
 )
-
-# <HACK>; FIXME: since the 'gnuradio-runtime' library reference does
-# not yet exist, we have to directly add its variables here so that it
-# can be used as a dependency. If it did exist, these items would be
-# automatically created and added via auto deps.
-
-set(ENABLE_GNURADIO_RUNTIME_CMAKE_LIB
-    gnuradio-runtime CACHE INTERNAL "" FORCE
-)
-set(ENABLE_GNURADIO_RUNTIME_INTERNAL_INCLUDE_DIRS
-    ${GNURADIO_RUNTIME_INCLUDE_DIRS} CACHE INTERNAL "" FORCE
-)
-
-# </HACK>
 
 GR_REGISTER_COMPONENT("test-gnuradio-pmt" ENABLE_TEST_GNURADIO_PMT
     ENABLE_GNURADIO_PMT
