@@ -1,4 +1,4 @@
-# Copyright 2010-2011,2014 Free Software Foundation, Inc.
+# Copyright 2010-2015 Free Software Foundation, Inc.
 #
 # This file is part of GNU Radio
 #
@@ -132,56 +132,310 @@ endfunction(GR_LIBTOOL)
 # Do standard things to the library target
 # - set target properties
 # - make install rules
+# If using auto deps (new style) then you can use the following variables:
+#  RUNTIME_COMPONENT
+#  DEVEL_COMPONENT
+#  AUTO_DEPS_VAR
+#  DO_INSTALL : 
+#  SOURCES : common sources no matter the library type
+#  STATIC_ONLY_SOURCES
+#  SHARED_ONLY_SOURCES
+#  EXTRA_INTERNAL_INCLUDE_DIRS
+#  EXTRA_INTERNAL_DEPS
+#  EXTRA_EXTERNAL_INCLUDE_DIRS
+#  EXTRA_LIBS
+#  EXTRA_EXTERNAL_LIBRARY_DIRS
+# using the auto dependencies, add the library and set its version info.
 # Also handle gnuradio custom naming conventions w/ extras mode.
 ########################################################################
 function(GR_LIBRARY_FOO target)
-    #parse the arguments for component names
-    include(CMakeParseArgumentsCopy)
-    CMAKE_PARSE_ARGUMENTS(GR_LIBRARY "" "RUNTIME_COMPONENT;DEVEL_COMPONENT" "" ${ARGN})
 
-    #set additional target properties
+    # parse the arguments for component names
+
+    include(CMakeParseArgumentsCopy)
+    CMAKE_PARSE_ARGUMENTS(GR_LIBRARY "" "RUNTIME_COMPONENT;DEVEL_COMPONENT;AUTO_DEPS_VAR;DO_INSTALL" "SOURCES;STATIC_ONLY_SOURCES;SHARED_ONLY_SOURCES;EXTRA_INTERNAL_INCLUDE_DIRS;EXTRA_INTERNAL_DEPS;EXTRA_EXTERNAL_INCLUDE_DIRS;EXTRA_LIBS;EXTRA_EXTERNAL_LIBRARY_DIRS" ${ARGN})
+
+    # new style?
+
+    if(DEFINED GR_LIBRARY_AUTO_DEPS_VAR)
+
+      message(STATUS "GR_LIBRARY_FOO: new style")
+
+        # yes: set up include and library directories, and linked-to
+        # libraries based on ${GR_LIBRARY_AUTO_DEPS_VAR}
+
+        # if not set already, set DO_INSTALL to YES; used later
+        if(NOT DEFINED GR_LIBRARY_DO_INSTALL)
+          set(GR_LIBRARY_DO_INSTALL YES)
+        endif()
+
+        # set the cmake library for this auto deps name, to be used
+        # when this component is a dependency for some other component
+
+        set(${GR_LIBRARY_AUTO_DEPS_VAR}_CMAKE_LIB ${target} CACHE INTERNAL "" FORCE)
+
+        unset(this_libs)
+        unset(this_include_dirs)
+        unset(this_library_dirs)
+
+        # assuming this function is called from gr-component/lib, so
+        # add in various include dirs accordingly
+
+        list(APPEND this_include_dirs
+            ${CMAKE_CURRENT_SOURCE_DIR}
+            ${CMAKE_CURRENT_BINARY_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}/..
+            ${CMAKE_CURRENT_BINARY_DIR}/..
+            ${CMAKE_CURRENT_SOURCE_DIR}/../include
+            ${CMAKE_CURRENT_BINARY_DIR}/../include
+        )
+
+        # put extra internal include dirs next
+        list(APPEND this_include_dirs
+            ${GR_LIBRARY_EXTRA_INTERNAL_INCLUDE_DIRS})
+
+        # store internal include dirs, for use in other components
+
+        set(${GR_LIBRARY_AUTO_DEPS_VAR}_INTERNAL_INCLUDE_DIRS
+            ${this_include_dirs} CACHE INTERNAL "" FORCE)
+
+        # add internal dependent libraries via cmake library naming;
+        # cmake will handle adding include and library dirs as needed.
+
+        foreach(dep ${${GR_LIBRARY_AUTO_DEPS_VAR}_INTERNAL_DEPS})
+            list(APPEND this_libs ${${dep}_CMAKE_LIB})
+            list(APPEND this_include_dirs ${${dep}_INTERNAL_INCLUDE_DIRS})
+        endforeach(dep)
+
+	# add external dependent libraries; if possible use the FOUND
+	# variable's auto-deps info, e.g., ${FOO_FOUND}_INCLUDE_DIRS;
+	# and, if not try FOO_INCLUDE_DIRS, and if that's not found
+	# then print a warning but don't exit.
+
+	foreach(dep ${${GR_LIBRARY_AUTO_DEPS_VAR}_EXTERNAL_DEPS})
+	  message(STATUS "GR_LIBRARY_FOO: this external dep is '${dep}'")
+	  message(STATUS "GR_LIBRARY_FOO: 'dep'_LIBRARIES is '${${dep}_LIBRARIES}'")
+	  message(STATUS "GR_LIBRARY_FOO: 'dep'_INCLUDE_DIRS is '${${dep}_INCLUDE_DIRS}'")
+	  if(${dep}_LIBRARIES)
+	    message(STATUS "GR_LIBRARY_FOO: adding library '${${dep}_LIBRARIES}'")
+            list(APPEND this_libs ${${dep}_LIBRARIES})
+	  else()
+	    string(FIND ${dep} "_FOUND" FOUND_NDX)
+	    if(NOT ${FOUND_NDX} EQUAL -1)
+	      string(SUBSTRING ${dep} 0 ${FOUND_NDX} FOUND_STR)
+	      message(STATUS "GR_LIBRARY_FOO: found 'FOUND' name '${FOUND_STR}'")
+	      if(${FOUND_STR}_LIBRARIES)
+		message(STATUS "GR_LIBRARY_FOO: adding library '${FOUND_STR}_LIBRARIES'")
+		list(APPEND this_libs ${${FOUND_STR}_LIBRARIES})
+	      endif()
+	    endif()	      
+	  endif()
+
+#          list(APPEND this_include_dirs ${${dep}_INTERNAL_INCLUDE_DIRS})
+        endforeach()
+
+        # add LOG and/or LOG4CPP if logging is enabled
+
+        if(ENABLE_GR_LOG)
+            add_definitions(-DENABLE_GR_LOG)
+            if(HAVE_LOG4CPP)
+                add_definitions(-DHAVE_LOG4CPP)
+                list(APPEND this_include_dirs ${LOG4CPP_INCLUDE_DIRS})
+                list(APPEND this_libs ${LOG4CPP_LIBRARIES})
+            endif(HAVE_LOG4CPP)
+        endif(ENABLE_GR_LOG)
+
+        # if testing is enabled, add CPPUNIT
+
+        if(ENABLE_TESTING)
+            list(APPEND this_include_dirs ${CPPUNIT_INCLUDE_DIRS})
+            list(APPEND this_libs ${CPPUNIT_LIBRARIES})
+        endif(ENABLE_TESTING)
+
+        # always add boost
+
+        list(APPEND this_include_dirs ${Boost_INCLUDE_DIRS})
+        list(APPEND this_libs ${Boost_LIBRARIES})
+
+        # add in extra libs
+
+        list(APPEND this_libs ${GR_LIBRARY_EXTRA_LIBS})
+
+        # add in provided extra external library dirs
+
+        list(APPEND this_library_dirs
+            ${GR_LIBRARY_EXTRA_EXTERNAL_LIBRARY_DIRS})
+
+        # add in provided extra external include dirs
+
+        list(APPEND this_include_dirs
+            ${GR_LIBRARY_EXTRA_EXTERNAL_INCLUDE_DIRS})
+
+        # setup include dirs (clearing first)
+
+        set_directory_properties(PROPERTIES INCLUDE_DIRECTORIES "")
+	if(this_include_dirs)
+          list(REMOVE_DUPLICATES this_include_dirs)
+          include_directories(${this_include_dirs})
+	endif()
+
+        # setup library dirs (clearing first)
+
+        set_directory_properties(PROPERTIES LINK_DIRECTORIES "")
+	if(this_library_dirs)
+          list(REMOVE_DUPLICATES this_library_dirs)
+          link_directories(${this_library_dirs})
+	endif()
+
+        # is this a test?
+
+        string(REGEX MATCH "^test-" name_has_test ${target})
+        if(NOT "${name_has_test}" STREQUAL "")
+          set(IS_TEST TRUE)
+        else()
+          set(IS_TEST FALSE)
+        endif()
+
+        # Add Windows DLL resource file if using MSVC
+        # and this is not a test library
+
+        if(MSVC AND NOT IS_TEST)
+
+          include(${CMAKE_SOURCE_DIR}/cmake/Modules/GrVersion.cmake)
+
+          configure_file(
+            ${CMAKE_CURRENT_SOURCE_DIR}/${target}.rc.in
+            ${CMAKE_CURRENT_BINARY_DIR}/${target}.rc
+          @ONLY)
+
+          list(APPEND GR_LIBRARY_SOURCES
+            ${CMAKE_CURRENT_BINARY_DIR}${target}.rc
+          )
+
+        endif()
+
+        # add the target library with the provided sources
+
+        add_library(${target} SHARED
+          ${GR_LIBRARY_SOURCES}
+          ${GR_LIBRARY_SHARED_ONLY_SOURCES}
+        )
+
+        # specify target library linkage
+
+        target_link_libraries(${target} ${this_libs})
+
+        # add extra internal dependencies
+
+        if(DEFINED GR_LIBRARY_EXTRA_INTERNAL_DEPS)
+          add_dependencies(${target} ${GR_LIBRARY_EXTRA_INTERNAL_DEPS})
+        endif()
+
+        if(ENABLE_STATIC_LIBS)
+
+          add_library(${target}_static STATIC
+            ${GR_LIBRARY_SOURCES}
+            ${GR_LIBRARY_STATIC_ONLY_SOURCES}
+          )
+
+          if(DEFINED GR_LIBRARY_EXTRA_INTERNAL_DEPS)
+            add_dependencies(${target}_static ${GR_LIBRARY_EXTRA_INTERNAL_DEPS})
+          endif()
+
+          if(NOT WIN32)
+            set_target_properties(${target}_static
+              PROPERTIES OUTPUT_NAME ${target}
+            )
+          endif(NOT WIN32)
+
+          install(TARGETS ${target}_static
+            ARCHIVE DESTINATION ${GR_LIBRARY_DIR} COMPONENT ${GR_LIBRARY_DEVEL_COMPONENT}   # .a/.lib file
+          )
+
+        endif(ENABLE_STATIC_LIBS)
+
+	# handle CTRLPORT
+
+	if(ENABLE_GR_CTRLPORT)
+	  if(ENABLE_STATIC_LIBS)
+
+	    # Remove GR_CTRLPORT set this directory's definitions.
+	    # Makes sure we don't try to use ControlPort stuff when
+	    # compiling static source files.
+
+	    get_directory_property(STATIC_DEFS COMPILE_DEFINITIONS)
+	    list(REMOVE_ITEM STATIC_DEFS "GR_CTRLPORT")
+	    set_property(DIRECTORY PROPERTY COMPILE_DEFINITIONS "${STATIC_DEFS}")
+
+	  endif(ENABLE_STATIC_LIBS)
+
+	  # add it to the target instead of via add_definition;
+	  # works with and without static libraries
+
+	  set_property(TARGET ${target} APPEND
+	    PROPERTY COMPILE_DEFINITIONS "GR_CTRLPORT"
+	  )
+
+	endif(ENABLE_GR_CTRLPORT)
+
+    else(DEFINED GR_LIBRARY_AUTO_DEPS_VAR)
+
+        message(STATUS "GR_LIBRARY_FOO: old style")
+
+        # set DO_INSTALL to YES; used later
+        set(GR_LIBRARY_DO_INSTALL YES)
+
+      endif(DEFINED GR_LIBRARY_AUTO_DEPS_VAR)
+
+    # set additional target properties
     set_target_properties(${target} PROPERTIES SOVERSION ${LIBVER})
 
-    #install the generated files like so...
-    install(TARGETS ${target}
-        LIBRARY DESTINATION ${GR_LIBRARY_DIR} COMPONENT ${GR_LIBRARY_RUNTIME_COMPONENT} # .so/.dylib file
-        ARCHIVE DESTINATION ${GR_LIBRARY_DIR} COMPONENT ${GR_LIBRARY_DEVEL_COMPONENT}   # .lib file
-        RUNTIME DESTINATION ${GR_RUNTIME_DIR} COMPONENT ${GR_LIBRARY_RUNTIME_COMPONENT} # .dll file
-    )
+    if(GR_LIBRARY_DO_INSTALL)
 
-    #extras mode enabled automatically on linux
-    if(NOT DEFINED LIBRARY_EXTRAS)
-        set(LIBRARY_EXTRAS ${LINUX})
-    endif()
+        # install the generated library/ies like so...
 
-    #special extras mode to enable alternative naming conventions
-    if(LIBRARY_EXTRAS)
-
-        #create .la file before changing props
-        GR_LIBTOOL(TARGET ${target} DESTINATION ${GR_LIBRARY_DIR})
-
-        #give the library a special name with ultra-zero soversion
-        set_target_properties(${target} PROPERTIES OUTPUT_NAME ${target}-${LIBVER} SOVERSION "0.0.0")
-        set(target_name lib${target}-${LIBVER}.so.0.0.0)
-
-        #custom command to generate symlinks
-        add_custom_command(
-            TARGET ${target}
-            POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E create_symlink ${target_name} ${CMAKE_CURRENT_BINARY_DIR}/lib${target}.so
-            COMMAND ${CMAKE_COMMAND} -E create_symlink ${target_name} ${CMAKE_CURRENT_BINARY_DIR}/lib${target}-${LIBVER}.so.0
-            COMMAND ${CMAKE_COMMAND} -E touch ${target_name} #so the symlinks point to something valid so cmake 2.6 will install
+        install(TARGETS ${target}
+            LIBRARY DESTINATION ${GR_LIBRARY_DIR} COMPONENT ${GR_LIBRARY_RUNTIME_COMPONENT} # .so/.dylib file
+            ARCHIVE DESTINATION ${GR_LIBRARY_DIR} COMPONENT ${GR_LIBRARY_DEVEL_COMPONENT}   # .a/.lib file
+            RUNTIME DESTINATION ${GR_RUNTIME_DIR} COMPONENT ${GR_LIBRARY_RUNTIME_COMPONENT} # .dll file
         )
 
-        #and install the extra symlinks
-        install(
-            FILES
-            ${CMAKE_CURRENT_BINARY_DIR}/lib${target}.so
-            ${CMAKE_CURRENT_BINARY_DIR}/lib${target}-${LIBVER}.so.0
-            DESTINATION ${GR_LIBRARY_DIR} COMPONENT ${GR_LIBRARY_RUNTIME_COMPONENT}
-        )
+        # extras mode enabled automatically on Linux
 
-    endif(LIBRARY_EXTRAS)
+        if(NOT DEFINED LIBRARY_EXTRAS)
+            set(LIBRARY_EXTRAS ${LINUX})
+        endif()
+
+        # special extras mode to enable alternative naming conventions
+        if(LIBRARY_EXTRAS)
+
+            # create .la file before changing props
+            GR_LIBTOOL(TARGET ${target} DESTINATION ${GR_LIBRARY_DIR})
+
+            # give the library a special name with ultra-zero soversion
+            set_target_properties(${target} PROPERTIES OUTPUT_NAME ${target}-${LIBVER} SOVERSION "0.0.0")
+            set(target_name lib${target}-${LIBVER}.so.0.0.0)
+
+            # custom command to generate symlinks
+            add_custom_command(
+                TARGET ${target}
+                POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E create_symlink ${target_name} ${CMAKE_CURRENT_BINARY_DIR}/lib${target}.so
+                COMMAND ${CMAKE_COMMAND} -E create_symlink ${target_name} ${CMAKE_CURRENT_BINARY_DIR}/lib${target}-${LIBVER}.so.0
+                COMMAND ${CMAKE_COMMAND} -E touch ${target_name} #so the symlinks point to something valid so cmake 2.6 will install
+            )
+
+            # and install the extra symlinks
+            install(
+                FILES
+                ${CMAKE_CURRENT_BINARY_DIR}/lib${target}.so
+                ${CMAKE_CURRENT_BINARY_DIR}/lib${target}-${LIBVER}.so.0
+                DESTINATION ${GR_LIBRARY_DIR} COMPONENT ${GR_LIBRARY_RUNTIME_COMPONENT}
+            )
+
+        endif(LIBRARY_EXTRAS)
+    endif(GR_LIBRARY_DO_INSTALL)
+
 endfunction(GR_LIBRARY_FOO)
 
 ########################################################################

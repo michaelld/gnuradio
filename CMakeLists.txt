@@ -308,12 +308,15 @@ if(NOT VOLK_FOUND)
         message(STATUS "")
         message(FATAL_ERROR "VOLK required but not found.")
     endif()
+    set(INTREE_VOLK_FOUND ${INTREE_VOLK_FOUND} CACHE INTERNAL "" FORCE)
 
     add_subdirectory(volk)
     # if the above command returns, then VOLK is enabled
 
     include(GrComponent)
     GR_REGISTER_COMPONENT("volk" ENABLE_VOLK)
+
+    # FIXME: are the 2 below defined needed with auto-deps?
 
     set(VOLK_INCLUDE_DIRS
         ${CMAKE_CURRENT_SOURCE_DIR}/volk/include
@@ -322,24 +325,21 @@ if(NOT VOLK_FOUND)
 
     set(VOLK_LIBRARIES volk)
 
-    if(ENABLE_VOLK)
+    include(GrPackage)
+    CPACK_SET(CPACK_COMPONENT_GROUP_VOLK_DESCRIPTION "Vector optimized library of kernels")
 
-        include(GrPackage)
-        CPACK_SET(CPACK_COMPONENT_GROUP_VOLK_DESCRIPTION "Vector optimized library of kernels")
+    CPACK_COMPONENT("volk_runtime"
+        GROUP        "Volk"
+        DISPLAY_NAME "Runtime"
+        DESCRIPTION  "Dynamic link libraries"
+    )
 
-        CPACK_COMPONENT("volk_runtime"
-            GROUP        "Volk"
-            DISPLAY_NAME "Runtime"
-            DESCRIPTION  "Dynamic link libraries"
-        )
+    CPACK_COMPONENT("volk_devel"
+       GROUP        "Volk"
+       DISPLAY_NAME "Development"
+       DESCRIPTION  "C++ headers, package config, import libraries"
+    )
 
-        CPACK_COMPONENT("volk_devel"
-            GROUP        "Volk"
-            DISPLAY_NAME "Development"
-            DESCRIPTION  "C++ headers, package config, import libraries"
-        )
-
-    endif(ENABLE_VOLK)
 else()
     message(STATUS "  An external VOLK has been found and will be used for build.")
     set(ENABLE_VOLK TRUE)

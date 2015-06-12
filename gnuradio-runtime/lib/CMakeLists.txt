@@ -21,6 +21,13 @@ include(GrMiscUtils)
 GR_CHECK_HDR_N_DEF(sys/resource.h HAVE_SYS_RESOURCE_H)
 
 ########################################################################
+# clear local variables
+########################################################################
+unset(gnuradio_runtime_sources)
+unset(gnuradio_runtime_libs)
+unset(gnuradio_runtime_include_dirs)
+
+########################################################################
 # Handle the generated constants
 ########################################################################
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
@@ -44,19 +51,11 @@ configure_file(
 list(APPEND gnuradio_runtime_sources ${CMAKE_CURRENT_BINARY_DIR}/constants.cc)
 
 ########################################################################
-# Include subdirs rather to populate to the sources lists.
+# Setup the include paths
 ########################################################################
-#GR_INCLUDE_SUBDIRECTORY(foo)
-
-########################################################################
-# Setup the include and linker paths
-########################################################################
-include_directories(${GNURADIO_RUNTIME_INCLUDE_DIRS}
-                    ${CMAKE_CURRENT_SOURCE_DIR}
-		    ${CMAKE_CURRENT_BINARY_DIR}/../include/
-		    ${VOLK_INCLUDE_DIRS}
-                    ${Boost_INCLUDE_DIRS}
-)
+list(APPEND gnuradio_runtime_include_dirs
+   ${GNURADIO_RUNTIME_INCLUDE_DIRS}
+ )
 
 ########################################################################
 # Include subdirs rather to populate to the sources lists.
@@ -120,7 +119,6 @@ list(APPEND gnuradio_runtime_sources
   vmcircbuf_mmap_tmpfile.cc
   vmcircbuf_prefs.cc
   vmcircbuf_sysv_shm.cc
-  ${gnuradio_ctrlport_sources}
 )
 
 # PowerPC workaround for posix_memalign
@@ -130,13 +128,6 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)")
         ${CMAKE_CURRENT_SOURCE_DIR}/posix_memalign.cc
     )
 endif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)")
-
-list(APPEND gnuradio_runtime_libs
-    gnuradio-pmt
-    ${VOLK_LIBRARIES}
-    ${Boost_LIBRARIES}
-    ${LOG4CPP_LIBRARIES}
-)
 
 #Add libraries for winsock2.h on Windows
 CHECK_INCLUDE_FILE_CXX(windows.h HAVE_WINDOWS_H)
@@ -150,23 +141,6 @@ ENDIF(HAVE_WINDOWS_H)
 if(LINUX)
     list(APPEND gnuradio_runtime_libs rt)
 endif()
-
-########################################################################
-# Add DLL resource file when using MSVC
-########################################################################
-
-if(MSVC)
-    include(${CMAKE_SOURCE_DIR}/cmake/Modules/GrVersion.cmake)
-
-    configure_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/gnuradio-runtime.rc.in
-        ${CMAKE_CURRENT_BINARY_DIR}/gnuradio-runtime.rc
-    @ONLY)
-
-    list(APPEND gnuradio_runtime_sources
-        ${CMAKE_CURRENT_BINARY_DIR}/gnuradio-runtime.rc
-    )
-endif(MSVC)
 
 ########################################################################
 # Control availability of vmcircbuf methods.
@@ -191,92 +165,95 @@ if(TRY_SHM_VMCIRCBUF)
     add_definitions( -DTRY_SHM_VMCIRCBUF )
 endif(TRY_SHM_VMCIRCBUF)
 
-
 #######################################################
 # SHARED LIB BUILD
 #######################################################
-add_library(gnuradio-runtime SHARED ${gnuradio_runtime_sources})
-target_link_libraries(gnuradio-runtime ${gnuradio_runtime_libs})
-GR_LIBRARY_FOO(gnuradio-runtime RUNTIME_COMPONENT "runtime_runtime" DEVEL_COMPONENT "runtime_devel")
-
-add_dependencies(gnuradio-runtime
-  pmt_generated runtime_generated_includes
+GR_LIBRARY_FOO(gnuradio-runtime
+  RUNTIME_COMPONENT "runtime_runtime"
+  DEVEL_COMPONENT "runtime_devel"
+  AUTO_DEPS_VAR ENABLE_GNURADIO_RUNTIME
+  SOURCES ${gnuradio_runtime_sources}
+  SHARED_ONLY_SOURCES ${gnuradio_ctrlport_sources}
+  EXTRA_INTERNAL_DEPS pmt_generated runtime_generated_includes
+  EXTRA_INTERNAL_INCLUDE_DIRS ${gnuradio_runtime_include_dirs}
+  EXTRA_LIBS ${gnuradio_runtime_libs}
 )
-
-
-#######################################################
-# STATIC LIB BUILD
-#######################################################
-if(ENABLE_STATIC_LIBS)
-  # Remove controlport-specific source files from staticlibs build if
-  # ICE is the backend since it does not build statically.
-  if(ENABLE_GR_CTRLPORT)
-    if(ICE_FOUND)
-      list(REMOVE_ITEM gnuradio_runtime_sources
-        ${gnuradio_ctrlport_sources}
-        )
-
-      # Remove GR_CTRLPORT set this target's definitions.
-      # Makes sure we don't try to use ControlPort stuff in source files
-      GET_DIRECTORY_PROPERTY(STATIC_DEFS COMPILE_DEFINITIONS)
-      list(REMOVE_ITEM STATIC_DEFS "GR_CTRLPORT")
-      SET_PROPERTY(DIRECTORY PROPERTY COMPILE_DEFINITIONS "${STATIC_DEFS}")
-
-      # readd it to the target since we removed it from the directory-wide list.
-      SET_PROPERTY(TARGET gnuradio-runtime APPEND PROPERTY COMPILE_DEFINITIONS "GR_CTRLPORT")
-    endif(ICE_FOUND)
-  endif(ENABLE_GR_CTRLPORT)
-
-  add_library(gnuradio-runtime_static STATIC ${gnuradio_runtime_sources})
-
-  if(NOT WIN32)
-    set_target_properties(gnuradio-runtime_static
-      PROPERTIES OUTPUT_NAME gnuradio-runtime)
-  endif(NOT WIN32)
-
-  install(TARGETS gnuradio-runtime_static
-    ARCHIVE DESTINATION lib${LIB_SUFFIX} COMPONENT "runtime_devel"   # .lib file
-    )
-endif(ENABLE_STATIC_LIBS)
 
 ########################################################################
 # Setup tests
 ########################################################################
-if(ENABLE_TESTING)
-include(GrTest)
 
-########################################################################
-# Append gnuradio-runtime test sources
-########################################################################
-list(APPEND test_gnuradio_runtime_sources
-  math/qa_fxpt.cc
-  math/qa_fxpt_nco.cc
-  math/qa_fxpt_vco.cc
-  math/qa_math.cc
-  math/qa_sincos.cc
-  math/qa_fast_atan2f.cc
-  qa_buffer.cc
-  qa_io_signature.cc
-  qa_circular_file.cc
-  qa_logger.cc
-  qa_vmcircbuf.cc
-  qa_runtime.cc
+# gnuradio-runtime tests
+
+GR_REGISTER_COMPONENT("test-gnuradio-runtime-libs"
+  ENABLE_TEST_GNURADIO_RUNTIME_LIBS
+  ENABLE_GNURADIO_RUNTIME
+  ENABLE_GNURADIO_PMT
+  ENABLE_TESTING
 )
 
-include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/math)
-include_directories(${CPPUNIT_INCLUDE_DIRS})
-link_directories(${CPPUNIT_LIBRARY_DIRS})
+if(ENABLE_TEST_GNURADIO_RUNTIME_LIBS)
 
-add_library(test-gnuradio-runtime SHARED ${test_gnuradio_runtime_sources})
-target_link_libraries(test-gnuradio-runtime gnuradio-runtime gnuradio-pmt ${CPPUNIT_LIBRARIES} ${Boost_LIBRARIES} ${LOG4CPP_LIBRARIES})
+  include(GrTest)
 
-########################################################################
-# Build the test executable
-# Set the test environment so the build libs will be found under MSVC.
-########################################################################
-list(APPEND GR_TEST_TARGET_DEPS test-gnuradio-runtime)
-add_executable(gr_runtime_test test_runtime.cc)
-target_link_libraries(gr_runtime_test test-gnuradio-runtime)
-GR_ADD_TEST(gr-runtime-test gr_runtime_test)
+  unset(test_gnuradio_runtime_sources)
+  list(APPEND test_gnuradio_runtime_sources
+    math/qa_fxpt.cc
+    math/qa_fxpt_nco.cc
+    math/qa_fxpt_vco.cc
+    math/qa_math.cc
+    math/qa_sincos.cc
+    math/qa_fast_atan2f.cc
+    qa_buffer.cc
+    qa_io_signature.cc
+    qa_circular_file.cc
+    qa_logger.cc
+    qa_vmcircbuf.cc
+    qa_runtime.cc
+  )
 
-endif(ENABLE_TESTING)
+  GR_LIBRARY_FOO(test-gnuradio-runtime
+    AUTO_DEPS_VAR ENABLE_TEST_GNURADIO_RUNTIME_LIBS
+    DO_INSTALL NO
+    SOURCES ${test_gnuradio_runtime_sources}
+    EXTRA_INTERNAL_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/math
+  )
+
+  GR_ADD_TEST(gr-runtime-test
+    TARGET_DEPS test-gnuradio-runtime
+    SOURCES test_runtime.cc
+  )
+
+endif(ENABLE_TEST_GNURADIO_RUNTIME_LIBS)
+
+# gnuradio-pmt tests
+
+GR_REGISTER_COMPONENT("test-gnuradio-pmt" ENABLE_TEST_GNURADIO_PMT
+ ENABLE_GNURADIO_PMT
+ ENABLE_GNURADIO_RUNTIME
+ ENABLE_TESTING
+)
+
+if(ENABLE_TEST_GNURADIO_PMT)
+
+  include(GrTest)
+
+  unset(test_gnuradio_pmt_sources)
+  list(APPEND test_gnuradio_pmt_sources
+    pmt/qa_pmt.cc
+    pmt/qa_pmt_prims.cc
+    ${CMAKE_CURRENT_BINARY_DIR}/pmt/qa_pmt_unv.cc
+  )
+
+  GR_LIBRARY_FOO(test-gnuradio-pmt
+    DO_INSTALL NO
+    AUTO_DEPS_VAR ENABLE_TEST_GNURADIO_PMT
+    SOURCES ${test_gnuradio_pmt_sources}
+  )
+
+  GR_ADD_TEST(gr-pmt-test
+    TARGET_DEPS test-gnuradio-pmt
+    SOURCES pmt/test_pmt.cc
+  )
+
+endif(ENABLE_TEST_GNURADIO_PMT)

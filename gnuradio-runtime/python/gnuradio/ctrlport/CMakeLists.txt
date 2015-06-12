@@ -1,4 +1,4 @@
-# Copyright 2012 Free Software Foundation, Inc.
+# Copyright 2012,2015 Free Software Foundation, Inc.
 #
 # This file is part of GNU Radio
 #
@@ -18,6 +18,8 @@
 # Boston, MA 02110-1301, USA.
 
 ########################################################################
+if(ENABLE_GR_CTRLPORT)
+
 include(GrPython)
 
 install(
@@ -26,7 +28,6 @@ install(
     DESTINATION ${GR_PYTHON_DIR}/gnuradio/ctrlport
     COMPONENT "runtime_python"
 )
-
 
 GR_PYTHON_INSTALL(
     FILES
@@ -77,3 +78,5 @@ GR_PYTHON_INSTALL(
 )
 
 endif(THRIFT_FOUND)
+
+endif(ENABLE_GR_CTRLPORT)

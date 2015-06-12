@@ -1,4 +1,4 @@
-# Copyright 2013 Free Software Foundation, Inc.
+# Copyright 2013,2015 Free Software Foundation, Inc.
 #
 # This file is part of GNU Radio
 #
@@ -20,12 +20,7 @@
 if(ENABLE_GR_CTRLPORT)
 
 # Keep track of the number of backends ControlPort supports
-SET(CTRLPORT_BACKENDS 0)
-
-# Add definition so we can compile in ControlPort to the blocks.
-add_definitions(-DGR_CTRLPORT)
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+SET(NUM_CTRLPORT_BACKENDS 0)
 
 list(APPEND gnuradio_ctrlport_sources
   ${CMAKE_CURRENT_SOURCE_DIR}/rpcmanager.cc
@@ -44,7 +39,7 @@ FIND_PACKAGE(Thrift)
 
 if(THRIFT_FOUND)
 
-MATH(EXPR CTRLPORT_BACKENDS "${CTRLPORT_BACKENDS} + 1")
+MATH(EXPR NUM_CTRLPORT_BACKENDS "${NUM_CTRLPORT_BACKENDS} + 1")
 
 # Indicate thrift as an installed backend in the cmake summary.
 message(STATUS "Found and enabling Thrift backend to ControlPort")
@@ -93,11 +88,14 @@ endif(ENABLE_CTRLPORT_THRIFT)
 # Add controlport stuff to gnuradio-runtime
 ########################################################################
 
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
+# Append this directory for includes
+list(APPEND gnuradio_runtime_include_dirs
+  ${CMAKE_CURRENT_BINARY_DIR}
+)
 
 # Save the number of backends for testing against later
 set(
-  CTRLPORT_BACKENDS ${CTRLPORT_BACKENDS}
+  NUM_CTRLPORT_BACKENDS ${NUM_CTRLPORT_BACKENDS}
   CACHE INTERNAL "Number of ControlPort backends available"
 )
 
