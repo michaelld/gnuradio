@@ -57,6 +57,12 @@ list(APPEND gnuradio_runtime_include_dirs
    ${GNURADIO_RUNTIME_INCLUDE_DIRS}
  )
 
+if(ENABLE_CTRLPORT_THRIFT)
+    list(APPEND include_directories
+        ${THRIFT_INCLUDE_DIRS}
+    )
+endif(ENABLE_CTRLPORT_THRIFT)
+
 ########################################################################
 # Include subdirs rather to populate to the sources lists.
 ########################################################################
